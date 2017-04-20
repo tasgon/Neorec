@@ -1,29 +1,24 @@
-//extern crate rusqlite;
+extern crate rusqlite;
 
-//use rusqlite::Connection;
-use std::fs::File;
+use rusqlite::Connection;
 use std::thread::sleep;
-use std::time::Duration;
+use std::time::{Duration, SystemTime};
 
 mod recorder;
 
-static INPUT: &'static str = "/sensors/accelerometer/data";
-//static OUTPUT: &'static str = "data.db";
-
 fn main() {
-    /*let db = Connection::open(OUTPUT).unwrap();
-    let create_result = db.execute("CREATE TABLE data (
+    let db = Connection::open("./data.db").unwrap();
+    db.execute("CREATE TABLE data (
             ax      INTEGER NOT NULL,
             ay      INTEGER NOT NULL,
-            az      INTEGER NOT NULL,
-            time    TEXT NOT NULL", &[]);*/
+            az      INTEGER NOT NULL)", &[]).unwrap();
     let sleep_time = Duration::from_millis(100);
     loop {
-        let file = File::open(INPUT).unwrap();
-        let acc = recorder::read_acceleration(file);
+        let cur_time = SystemTime::now();
+        let acc = recorder::acceleration();
         println!("ax: {}, ay: {}, az: {}", acc.ax, acc.ay, acc.az);
-        //db.execute("INSERT INTO data (ax, ay, az, time)
-        //    VALUES (?1, ?2, ?3, strftime('%f', 'now')", &[&acc.ax, &acc.ay, &acc.az]).unwrap();
-        sleep(sleep_time);
+        db.execute("INSERT INTO data (ax, ay, az)
+            VALUES (?1, ?2, ?3)", &[&acc.ax, &acc.ay, &acc.az]).unwrap();
+        sleep(sleep_time - cur_time.elapsed().unwrap());
     }
 }
